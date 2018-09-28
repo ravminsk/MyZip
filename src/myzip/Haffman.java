@@ -74,6 +74,7 @@ public class Haffman {
 	}
 
 	public byte[] deCode(DataBuf inObject) {
+		if (inObject==null) return null;
 		byte[] outBuf = new byte[inObject.getBufSizeNoZip()];
 		List<Node> listNodeKod = createLiteraCod(inObject.getKodMapLight());
 		// для быстрого поиска по кодам копируем ListNodeKod в Map.
