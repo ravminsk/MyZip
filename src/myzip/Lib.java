@@ -21,7 +21,7 @@ public class Lib {
 	public static DataBuf readObjectFromFile(String fileName) throws ClassNotFoundException, IOException {
 		ObjectInputStream ois = new ObjectInputStream(new FileInputStream(new File(fileName)));
 		return (DataBuf) ois.readObject();
-		// System.out.println("readObjectFromFile read " + fileName); //for debugging
+		//System.out.println("readObjectFromFile read " + fileName); //for debugging
 	}
 
 	public static boolean writeToFileFromBuf(String fileName, byte[] outBuf) {
@@ -29,13 +29,13 @@ public class Lib {
 			return false;
 		}
 		try (DataOutputStream dos = new DataOutputStream(new FileOutputStream(new File(fileName)));) {
-			System.out.println("запись в файл " + fileName);
+			//System.out.println("запись в файл " + fileName);//for debugging
 			dos.write(outBuf);
 			dos.flush();
 			dos.close();
 			return true;
 		} catch (IOException e) {
-			System.out.println("ошибка чтения файла " + fileName);
+			//System.out.println("ошибка чтения файла " + fileName); // for debugging
 			e.printStackTrace();
 			return false;
 		}
@@ -47,10 +47,10 @@ public class Lib {
 			oos.writeObject(dataToWrite);
 			oos.flush();
 			oos.close();
-			System.out.println("запись в файл " + fileName);
+			//System.out.println("запись в файл " + fileName);// for debugging
 			return true;
 		} catch (IOException e) {
-			System.out.println("ошибка чтения файла " + fileName);
+			//System.out.println("ошибка чтения файла " + fileName);// for debugging
 			e.printStackTrace();
 			return false;
 		}
