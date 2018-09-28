@@ -22,40 +22,41 @@ class MainFrame extends JFrame {
 	private static final int DEFAULT_WIDTH = (int) (Toolkit.getDefaultToolkit().getScreenSize().getWidth() / 3);
 	private static final int DEFAULT_HEIGHT = (int) (Toolkit.getDefaultToolkit().getScreenSize().getHeight() / 3);
 
-	// элементы основного окна
-	JPanel panel3 = new JPanel();
+	// components of main frame
+	JPanel panelButton = new JPanel();
 	JButton bArchive = new JButton(" Добавить в архив... ");
 	JButton bExtract = new JButton(" Извлечь из архива... ");
 
-	JPanel panel4 = new JPanel();
+	JPanel paneTxtArea = new JPanel();
 	public JTextArea txtArea = new JTextArea(6, 50);
 
-	JPanel panel5 = new JPanel();
+	JPanel panelFrame = new JPanel();
 
-	// конструктор для инициализации окна
+	// constructor
 	public MainFrame(String title) {
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		setTitle(title);
 		setLocationByPlatform(true);
 
-		panel3.add(bArchive);
-		panel3.add(bExtract);
+		panelButton.add(bArchive);
+		panelButton.add(bExtract);
 
-		panel4.add(new JScrollPane(txtArea));
+		paneTxtArea.add(new JScrollPane(txtArea));
 
-		panel5.setLayout(new GridLayout(2, 1));
-		panel5.add(panel3);
-		panel5.add(panel4);
+		panelFrame.setLayout(new GridLayout(2, 1));
+		panelFrame.add(panelButton);
+		panelFrame.add(paneTxtArea);
 
-		add(panel5);
+		add(panelFrame);
 		pack();
 
-		// обработка нажатий кнопок
+		// event handling
 		bArchive.addActionListener(e -> {
 			FileDialog fd = new FileDialog(this, "Выберите файл для сжатия", FileDialog.LOAD);
 			fd.setVisible(true);
-			if (fd.getFile() == null)
+			if (fd.getFile() == null) {
 				return;
+			}
 
 			String fileName = fd.getFile().replaceFirst("[.][^.]+$", "");
 			String fileExt = fd.getFile().substring(fileName.length() + 1);
@@ -76,8 +77,9 @@ class MainFrame extends JFrame {
 		bExtract.addActionListener(e -> {
 			FileDialog fd = new FileDialog(this, "Выберите файл для извлечения из архива", FileDialog.LOAD);
 			fd.setVisible(true);
-			if (fd.getFile() == null)
+			if (fd.getFile() == null) {
 				return;
+			}
 
 			txtArea.append("Выбран файл для извлечения: " + fd.getDirectory() + fd.getFile() + "\n");
 			String fileName = fd.getFile().replaceFirst("[.][^.]+$", "");
@@ -85,7 +87,7 @@ class MainFrame extends JFrame {
 			boolean result = false;
 			DataBuf inObject = readObjectFromFile(fd.getDirectory() + fd.getFile());
 			byte[] outBuf = new Haffman().deCode(inObject);
-			if ((outBuf != null)&&(inObject!=null)) {
+			if ((outBuf != null) && (inObject != null)) {
 				result = writeToFileFromBuf(fd.getDirectory() + fileName + "." + inObject.getExt(), outBuf);
 			}
 

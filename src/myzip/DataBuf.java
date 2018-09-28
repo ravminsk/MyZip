@@ -4,30 +4,42 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
 
-// содержит структуру данных для записи в файл
+// contains a data structure for writing to a file
 public class DataBuf implements Serializable {
 
-	private int bufSizeZip;// размер сжатых данных
-	private int bufSizeNoZip;// размер неcжатых данных
-	private String ext;//расширение исходного файла
-	public byte[] byteBuf;// содержит данные в сжатом виде
-	
-	private HashMap<Byte, Integer> kodMapLight = new HashMap<Byte, Integer>();	// содержит символ-вес
+	private int bufSizeZip;// compressed data size
+	private int bufSizeNoZip;// size of uncompressed data
+	private String ext;// extension of the source file
+	public byte[] byteBuf;// contains compressed data
 
-	public DataBuf(int bufSizeZip, int bufSizeNoZip,String ext) {
+	private HashMap<Byte, Integer> codeMapLight = new HashMap<Byte, Integer>(); // contains value-weight
+
+	public DataBuf(int bufSizeZip, int bufSizeNoZip, String ext) {
 		byteBuf = new byte[bufSizeZip];
 		Arrays.fill(byteBuf, (byte) 0);
 		this.bufSizeZip = bufSizeZip;
 		this.bufSizeNoZip = bufSizeNoZip;
-		this.ext=ext;
+		this.ext = ext;
 	}
 
-	public int getBufSizeNoZip() {	return bufSizeNoZip;}
-	public int getBufSizeZip() {	return bufSizeZip;}
-	public String getExt() {	    return ext;}
-	public HashMap<Byte, Integer> getKodMapLight() {return kodMapLight;}
-	public void putKodMapLight(byte Value, int Weight) {
-		kodMapLight.put(Value, Weight);
+	public int getBufSizeNoZip() {
+		return bufSizeNoZip;
+	}
+
+	public int getBufSizeZip() {
+		return bufSizeZip;
+	}
+
+	public String getExt() {
+		return ext;
+	}
+
+	public HashMap<Byte, Integer> getcodeMapLight() {
+		return codeMapLight;
+	}
+
+	public void putcodeMapLight(byte Value, int Weight) {
+		codeMapLight.put(Value, Weight);
 	}
 
 }

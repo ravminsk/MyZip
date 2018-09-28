@@ -30,7 +30,7 @@ public class Lib {
 			System.out.println("Файл поврежден или имеет неизвестный формат" + fileName);
 			e.printStackTrace();
 		} catch (ClassNotFoundException e1) {
-			System.out.println("не найден класс DataBuf");// хз... как тут надо реагировать
+			System.out.println("не найден класс DataBuf");
 			e1.printStackTrace();
 		}
 		return null;
@@ -38,8 +38,9 @@ public class Lib {
 	}
 
 	public static boolean writeToFileFromBuf(String fileName, byte[] outBuf) {
-		if (outBuf==null) 
+		if (outBuf == null) {
 			return false;
+		}
 		try (DataOutputStream dos = new DataOutputStream(new FileOutputStream(new File(fileName)));) {
 			System.out.println("запись в файл " + fileName);
 			dos.write(outBuf);
