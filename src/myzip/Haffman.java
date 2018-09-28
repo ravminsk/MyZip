@@ -21,7 +21,7 @@ public class Haffman {
 		int bufSizeNoZip = inBuf.length;
 		int bufSizeZip = 0;
 		for (Node tmpNode : listNodeCode) {
-			bufSizeZip = bufSizeZip + tmpNode.getWeight() * tmpNode.getCodeLegthBit();
+			bufSizeZip = bufSizeZip + tmpNode.getWeight() * tmpNode.getCodeLengthBit();
 		}
 
 		if ((bufSizeZip % 8) != 0) {
@@ -56,7 +56,7 @@ public class Haffman {
 		for (byte inBufIndex : inBuf) {
 			Node codeNode = codeMap.get(inBufIndex);
 			int codeInt = codeNode.getCodeInt();
-			int codeLength = codeNode.getCodeLegthBit();
+			int codeLength = codeNode.getCodeLengthBit();
 			for (i32 = codeLength - 1; i32 >= 0; i32--) {
 				if ((bitMask[i32] & codeInt) != 0) {
 					myDataBuf.byteBuf[outBufIndex] = (byte) (myDataBuf.byteBuf[outBufIndex] | 1);
@@ -197,7 +197,7 @@ public class Haffman {
 			return codeInt;
 		}
 
-		public int getCodeLegthBit() {
+		public int getCodeLengthBit() {
 			return codeLengthBit;
 		}
 

@@ -10,6 +10,7 @@ import java.awt.GridLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -62,15 +63,21 @@ class MainFrame extends JFrame {
 			String fileExt = fd.getFile().substring(fileName.length() + 1);
 			txtArea.append("Выбран файл для сжатия: " + fd.getDirectory() + fd.getFile() + "\n");
 			long start = System.currentTimeMillis();
-			byte[] inBuf = readFromFileToBuf(fd.getDirectory() + fd.getFile());
+			byte[] inBuf=null;;
+			try {
+				inBuf = readFromFileToBuf(fd.getDirectory() + fd.getFile());
+			} catch (IOException e1) {
+				txtArea.append("ошибка чтения файла " + fd.getFile()+ "\n");
+				e1.printStackTrace();
+			}
 			DataBuf outObject = new Haffman().code(inBuf, fileExt);
 			boolean result = writeObjectToFile(fd.getDirectory() + fileName + ".myz", outObject);
 
 			if (result == true) {
-				txtArea.append("Записан файл " + fd.getDirectory() + fileName + ".myz" + "\n");
+				txtArea.append("Создан архив " + fd.getDirectory() + fileName + ".myz" + "\n");
 				txtArea.append("Время " + (System.currentTimeMillis() - start) + "ms \n");
 			} else {
-				txtArea.append("Ошибка при записи файла");
+				txtArea.append("Ошибка при записи файла \n");
 			}
 		});
 
@@ -85,12 +92,18 @@ class MainFrame extends JFrame {
 			String fileName = fd.getFile().replaceFirst("[.][^.]+$", "");
 			long start = System.currentTimeMillis();
 			boolean result = false;
-			DataBuf inObject = readObjectFromFile(fd.getDirectory() + fd.getFile());
-			byte[] outBuf = new Haffman().deCode(inObject);
-			if ((outBuf != null) && (inObject != null)) {
-				result = writeToFileFromBuf(fd.getDirectory() + fileName + "." + inObject.getExt(), outBuf);
+			DataBuf inObject = null;
+			
+			try {
+				inObject = readObjectFromFile(fd.getDirectory() + fd.getFile());
+			} catch (ClassNotFoundException | IOException e1) {
+				txtArea.append("Файл " + fd.getFile() + " поврежден или имеет неизвестный формат \n");
+				e1.printStackTrace();
+				return;
 			}
-
+			
+			byte[] outBuf = new Haffman().deCode(inObject);
+			result = writeToFileFromBuf(fd.getDirectory() + fileName + "." + inObject.getExt(), outBuf);
 			if (result == true) {
 				txtArea.append("Извлечен файл " + fd.getDirectory() + fileName + "." + inObject.getExt() + "\n");
 				txtArea.append("Время " + (System.currentTimeMillis() - start) + "ms \n");
