@@ -6,6 +6,7 @@ import static myzip.Lib.writeObjectToFile;
 import static myzip.Lib.writeToFileFromBuf;
 
 import java.awt.FileDialog;
+import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
@@ -23,7 +24,8 @@ class MainFrame extends JFrame {
 	private static final int DEFAULT_WIDTH = (int) (Toolkit.getDefaultToolkit().getScreenSize().getWidth() / 3);
 	private static final int DEFAULT_HEIGHT = (int) (Toolkit.getDefaultToolkit().getScreenSize().getHeight() / 3);
 
-	// components of main frame
+	// define components of main frame
+	
 	JPanel panelButton = new JPanel();
 	JButton bArchive = new JButton(" Добавить в архив... ");
 	JButton bExtract = new JButton(" Извлечь из архива... ");
@@ -38,7 +40,8 @@ class MainFrame extends JFrame {
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		setTitle(title);
 		setLocationByPlatform(true);
-
+		
+		panelButton.setLayout(new FlowLayout(1,40,20));
 		panelButton.add(bArchive);
 		panelButton.add(bExtract);
 
