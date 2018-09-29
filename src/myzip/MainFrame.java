@@ -5,6 +5,7 @@ import static myzip.Lib.readObjectFromFile;
 import static myzip.Lib.writeObjectToFile;
 import static myzip.Lib.writeToFileFromBuf;
 
+import java.awt.BorderLayout;
 import java.awt.FileDialog;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
@@ -41,10 +42,10 @@ class MainFrame extends JFrame {
 		setTitle(title);
 		setLocationByPlatform(true);
 		
-		panelButton.setLayout(new FlowLayout(1,40,20));
-		panelButton.add(bArchive);
-		panelButton.add(bExtract);
-
+		panelButton.setLayout(new BorderLayout());
+		panelButton.add(bArchive,BorderLayout.WEST);
+		panelButton.add(bExtract,BorderLayout.EAST);
+		
 		paneTxtArea.add(new JScrollPane(txtArea));
 
 		panelFrame.setLayout(new GridLayout(2, 1));
