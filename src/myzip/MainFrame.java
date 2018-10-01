@@ -45,6 +45,7 @@ class MainFrame extends JFrame {
 		panelButton.setLayout(new BorderLayout());
 		panelButton.add(bArchive,BorderLayout.WEST);
 		panelButton.add(bExtract,BorderLayout.EAST);
+		panelButton.add(new JButton(),BorderLayout.CENTER);
 		
 		paneTxtArea.add(new JScrollPane(txtArea));
 
@@ -53,7 +54,7 @@ class MainFrame extends JFrame {
 		panelFrame.add(paneTxtArea);
 
 		add(panelFrame);
-		pack();
+		//pack();
 
 		// event handling
 		bArchive.addActionListener(e -> {
