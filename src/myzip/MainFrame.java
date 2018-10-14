@@ -9,6 +9,7 @@ import java.awt.BorderLayout;
 import java.awt.FileDialog;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
+import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -17,13 +18,14 @@ import java.io.IOException;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 
 class MainFrame extends JFrame {
 
 	private static final int DEFAULT_WIDTH = (int) (Toolkit.getDefaultToolkit().getScreenSize().getWidth() / 3);
-	private static final int DEFAULT_HEIGHT = (int) (Toolkit.getDefaultToolkit().getScreenSize().getHeight() / 3);
+	private static final int DEFAULT_HEIGHT = (int) (Toolkit.getDefaultToolkit().getScreenSize().getHeight() / 5);
 
 	// define components of main frame
 	
@@ -31,30 +33,31 @@ class MainFrame extends JFrame {
 	JButton bArchive = new JButton(" Добавить в архив... ");
 	JButton bExtract = new JButton(" Извлечь из архива... ");
 
-	JPanel paneTxtArea = new JPanel();
+	JPanel panelTxtArea = new JPanel();
+	JProgressBar bar= new JProgressBar(); 
 	public JTextArea txtArea = new JTextArea(6, 50);
 
 	JPanel panelFrame = new JPanel();
 
 	// constructor
 	public MainFrame(String title) {
+		setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		setTitle(title);
 		setLocationByPlatform(true);
 		
-		panelButton.setLayout(new BorderLayout());
-		panelButton.add(bArchive,BorderLayout.WEST);
-		panelButton.add(bExtract,BorderLayout.EAST);
-		panelButton.add(new JButton(),BorderLayout.CENTER);
+		panelButton.add(bArchive, BorderLayout.EAST);
+		panelButton.add(bExtract, BorderLayout.WEST);
 		
-		paneTxtArea.add(new JScrollPane(txtArea));
+		panelTxtArea.add(new JScrollPane(txtArea), BorderLayout.NORTH);
+		panelTxtArea.add(bar, BorderLayout.SOUTH);
 
-		panelFrame.setLayout(new GridLayout(2, 1));
-		panelFrame.add(panelButton);
-		panelFrame.add(paneTxtArea);
+		panelFrame.setLayout(new BorderLayout());
+		panelFrame.add(panelButton, BorderLayout.NORTH);
+		panelFrame.add(panelTxtArea, BorderLayout.CENTER);
 
 		add(panelFrame);
-		//pack();
+		
 
 		// event handling
 		bArchive.addActionListener(e -> {
