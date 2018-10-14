@@ -1,17 +1,22 @@
 package myzip;
 
+import java.awt.EventQueue;
+
 import javax.swing.JFrame;
-import javax.swing.SwingUtilities;
 
 public class MyZipGui extends JFrame {
 	public static MainFrame mainFrame;
 
 	public static void main(String[] args) {
-
-		SwingUtilities.invokeLater(() -> {
-			mainFrame = new MainFrame("MyZipProgram");
-			mainFrame.setVisible(true);
-
+		EventQueue.invokeLater(new Runnable() {
+			public void run() {
+				try {
+					mainFrame = new MainFrame("MyZipProgram");
+					mainFrame.setVisible(true);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
 		});
 	}
 }

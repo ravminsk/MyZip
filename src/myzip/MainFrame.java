@@ -6,9 +6,13 @@ import static myzip.Lib.writeObjectToFile;
 import static myzip.Lib.writeToFileFromBuf;
 
 import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.awt.FileDialog;
 import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
+import java.awt.Insets;
 import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
@@ -17,6 +21,7 @@ import java.io.IOException;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
@@ -24,39 +29,78 @@ import javax.swing.JTextArea;
 
 class MainFrame extends JFrame {
 
-	private static final int DEFAULT_WIDTH = (int) (Toolkit.getDefaultToolkit().getScreenSize().getWidth() / 3);
-	private static final int DEFAULT_HEIGHT = (int) (Toolkit.getDefaultToolkit().getScreenSize().getHeight() / 5);
-
-	// define components of main frame
-	
-	JPanel panelButton = new JPanel();
-	JButton bArchive = new JButton(" Добавить в архив... ");
-	JButton bExtract = new JButton(" Извлечь из архива... ");
-
-	JPanel panelTxtArea = new JPanel();
-	JProgressBar bar= new JProgressBar(); 
-	public JTextArea txtArea = new JTextArea(6, 50);
-
-	JPanel panelFrame = new JPanel();
-
 	// constructor
 	public MainFrame(String title) {
-		setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
-		setDefaultCloseOperation(EXIT_ON_CLOSE);
-		setTitle(title);
+		
+		//define GUI components
+		setMinimumSize(new Dimension(400, 300));
 		setLocationByPlatform(true);
+		setBounds(100, 100, 450, 300);
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		GridBagLayout gridBagLayout = new GridBagLayout();
+		gridBagLayout.columnWidths = new int[] {15, 125, 15, 125, 15};
+		gridBagLayout.rowHeights = new int[] {15, 30, 15, 20, 30, 15, 20, 40, 15};
+		gridBagLayout.columnWeights = new double[]{0.0, 1.0, 0.0, 1.0, 0.0};
+		gridBagLayout.rowWeights = new double[]{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, Double.MIN_VALUE};
+		getContentPane().setLayout(gridBagLayout);
+		setTitle(title);
 		
-		panelButton.add(bArchive, BorderLayout.EAST);
-		panelButton.add(bExtract, BorderLayout.WEST);
+		JButton bArchive = new JButton("Добавить в архив...");
+		bArchive.setMargin(new Insets(2, 5, 2, 5));
+		bArchive.setMinimumSize(new Dimension(125, 30));
+		bArchive.setPreferredSize(new Dimension(125, 30));
+		GridBagConstraints gbc_bArchive = new GridBagConstraints();
+		gbc_bArchive.fill = GridBagConstraints.HORIZONTAL;
+		gbc_bArchive.gridx = 1;
+		gbc_bArchive.gridy = 1;
+		getContentPane().add(bArchive, gbc_bArchive);
 		
-		panelTxtArea.add(new JScrollPane(txtArea), BorderLayout.NORTH);
-		panelTxtArea.add(bar, BorderLayout.SOUTH);
-
-		panelFrame.setLayout(new BorderLayout());
-		panelFrame.add(panelButton, BorderLayout.NORTH);
-		panelFrame.add(panelTxtArea, BorderLayout.CENTER);
-
-		add(panelFrame);
+		JButton bExtract = new JButton("Извлечь из архива...");
+		bExtract.setMargin(new Insets(2, 5, 2, 5));
+		bExtract.setToolTipText("Извлечь файл из архива...");
+		bExtract.setMinimumSize(new Dimension(125, 30));
+		bExtract.setPreferredSize(new Dimension(125, 30));
+		GridBagConstraints gbc_bExtract = new GridBagConstraints();
+		gbc_bExtract.fill = GridBagConstraints.HORIZONTAL;
+		gbc_bExtract.gridx = 3;
+		gbc_bExtract.gridy = 1;
+		getContentPane().add(bExtract, gbc_bExtract);
+		
+		JLabel lbProgress = new JLabel("Выполнение задачи");
+		GridBagConstraints gbc_lbProgress = new GridBagConstraints();
+		gbc_lbProgress.gridwidth = 3;
+		gbc_lbProgress.anchor = GridBagConstraints.WEST;
+		gbc_lbProgress.gridx = 1;
+		gbc_lbProgress.gridy = 3;
+		getContentPane().add(lbProgress, gbc_lbProgress);
+		
+		JProgressBar progressBar = new JProgressBar();
+		progressBar.setStringPainted(true);
+		progressBar.setValue(65);
+		GridBagConstraints gbc_progressBar = new GridBagConstraints();
+		gbc_progressBar.fill = GridBagConstraints.BOTH;
+		gbc_progressBar.gridwidth = 3;
+		gbc_progressBar.gridx = 1;
+		gbc_progressBar.gridy = 4;
+		getContentPane().add(progressBar, gbc_progressBar);
+		
+		JLabel lbHistory = new JLabel("История");
+		GridBagConstraints gbc_lbHistory = new GridBagConstraints();
+		gbc_lbHistory.anchor = GridBagConstraints.WEST;
+		gbc_lbHistory.gridx = 1;
+		gbc_lbHistory.gridy = 6;
+		getContentPane().add(lbHistory, gbc_lbHistory);
+		
+		JScrollPane scrollPane = new JScrollPane();
+		GridBagConstraints gbc_scrollPane = new GridBagConstraints();
+		gbc_scrollPane.gridwidth = 3;
+		gbc_scrollPane.fill = GridBagConstraints.BOTH;
+		gbc_scrollPane.gridx = 1;
+		gbc_scrollPane.gridy = 7;
+		getContentPane().add(scrollPane, gbc_scrollPane);
+		
+		JTextArea taHistory = new JTextArea();
+		scrollPane.setViewportView(taHistory);
 		
 
 		// event handling
@@ -69,23 +113,23 @@ class MainFrame extends JFrame {
 
 			String fileName = fd.getFile().replaceFirst("[.][^.]+$", "");
 			String fileExt = fd.getFile().substring(fileName.length() + 1);
-			txtArea.append("Выбран файл для сжатия: " + fd.getDirectory() + fd.getFile() + "\n");
+			taHistory.append("Выбран файл для сжатия: " + fd.getDirectory() + fd.getFile() + "\n");
 			long start = System.currentTimeMillis();
 			byte[] inBuf=null;;
 			try {
 				inBuf = readFromFileToBuf(fd.getDirectory() + fd.getFile());
 			} catch (IOException e1) {
-				txtArea.append("ошибка чтения файла " + fd.getFile()+ "\n");
+				taHistory.append("ошибка чтения файла " + fd.getFile()+ "\n");
 				e1.printStackTrace();
 			}
 			DataBuf outObject = new Haffman().code(inBuf, fileExt);
 			boolean result = writeObjectToFile(fd.getDirectory() + fileName + ".myz", outObject);
 
 			if (result == true) {
-				txtArea.append("Создан архив " + fd.getDirectory() + fileName + ".myz" + "\n");
-				txtArea.append("Время " + (System.currentTimeMillis() - start) + "ms \n");
+				taHistory.append("Создан архив " + fd.getDirectory() + fileName + ".myz" + "\n");
+				taHistory.append("Время " + (System.currentTimeMillis() - start) + "ms \n");
 			} else {
-				txtArea.append("Ошибка при записи файла \n");
+				taHistory.append("Ошибка при записи файла \n");
 			}
 		});
 
@@ -96,7 +140,7 @@ class MainFrame extends JFrame {
 				return;
 			}
 
-			txtArea.append("Выбран файл для извлечения: " + fd.getDirectory() + fd.getFile() + "\n");
+			taHistory.append("Выбран файл для извлечения: " + fd.getDirectory() + fd.getFile() + "\n");
 			String fileName = fd.getFile().replaceFirst("[.][^.]+$", "");
 			long start = System.currentTimeMillis();
 			boolean result = false;
@@ -105,7 +149,7 @@ class MainFrame extends JFrame {
 			try {
 				inObject = readObjectFromFile(fd.getDirectory() + fd.getFile());
 			} catch (ClassNotFoundException | IOException e1) {
-				txtArea.append("Файл " + fd.getFile() + " поврежден или имеет неизвестный формат \n");
+				taHistory.append("Файл " + fd.getFile() + " поврежден или имеет неизвестный формат \n");
 				e1.printStackTrace();
 				return;
 			}
@@ -113,10 +157,10 @@ class MainFrame extends JFrame {
 			byte[] outBuf = new Haffman().deCode(inObject);
 			result = writeToFileFromBuf(fd.getDirectory() + fileName + "." + inObject.getExt(), outBuf);
 			if (result == true) {
-				txtArea.append("Извлечен файл " + fd.getDirectory() + fileName + "." + inObject.getExt() + "\n");
-				txtArea.append("Время " + (System.currentTimeMillis() - start) + "ms \n");
+				taHistory.append("Извлечен файл " + fd.getDirectory() + fileName + "." + inObject.getExt() + "\n");
+				taHistory.append("Время " + (System.currentTimeMillis() - start) + "ms \n");
 			} else {
-				txtArea.append("Файл поврежден или имеет неизвестный формат" + "\n");
+				taHistory.append("Файл поврежден или имеет неизвестный формат" + "\n");
 			}
 
 		});
