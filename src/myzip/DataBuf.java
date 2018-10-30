@@ -11,7 +11,6 @@ public class DataBuf implements Serializable {
 	private int bufSizeNoZip;// size of uncompressed data
 	private String ext;// extension of the source file
 	public byte[] byteBuf;// contains compressed data
-
 	private HashMap<Byte, Integer> codeMapLight = new HashMap<Byte, Integer>(); // contains value-weight
 
 	public DataBuf(int bufSizeZip, int bufSizeNoZip, String ext) {
@@ -42,4 +41,39 @@ public class DataBuf implements Serializable {
 		codeMapLight.put(Value, Weight);
 	}
 
+}
+
+class DataBufHeader implements Serializable {
+	
+	private int bufSizeZip;// compressed data size
+	private int bufSizeNoZip;// size of uncompressed data
+	private String ext;// extension of the source file
+	public HashMap<Byte, Integer> charsFreqMap = new HashMap<Byte, Integer>(); // contains value-weight
+
+	public DataBufHeader(int bufSizeZip, int bufSizeNoZip, String ext) {
+		this.bufSizeZip = bufSizeZip;
+		this.bufSizeNoZip = bufSizeNoZip;
+		this.ext = ext;
+	}
+
+	public int getBufSizeNoZip() {
+		return bufSizeNoZip;
+	}
+
+	public int getBufSizeZip() {
+		return bufSizeZip;
+	}
+
+	public String getExt() {
+		return ext;
+	}
+
+	public HashMap<Byte, Integer> getCharsFreqMap() {
+		return charsFreqMap;
+	}
+
+	public void putCharsFreqMap(byte Value, int Weight) {
+		charsFreqMap.put(Value, Weight);
+	}
+	
 }
