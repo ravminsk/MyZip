@@ -114,112 +114,8 @@ class MainFrame extends JFrame {
 			if (fd.getFile() == null) {
 				return;
 			}
-			taHistory.append("Выбран файл для сжатия: " + fd.getDirectory() + fd.getFile() + "\n");
-
-			long start = System.currentTimeMillis();// for debugging
-
-			String fileName = fd.getFile().replaceFirst("[.][^.]+$", "");
-			String fileExt = fd.getFile().substring(fileName.length() + 1);
-			int maxSize =65536; // inBuf size
-			ObjectOutputStream oos = null;
-			DataInputStream dis = null;
-			DataBufHeader dbHeader = new DataBufHeader(maxSize, maxSize, fileExt);
-			byte[] inBuf = null;
-			byte[] outBuf = null;
-
-			try {
-				oos = new ObjectOutputStream(new FileOutputStream(new File(fd.getDirectory() + "test.myz")));
-			} catch (IOException e1) {
-				e1.printStackTrace();
-			}
-
-			// fill frequency table
-			try {
-				dis = new DataInputStream(new FileInputStream(new File(fd.getDirectory() + fd.getFile())));
-				do {
-					if (dis.available() < maxSize) {
-						inBuf = new byte[dis.available()];
-					} else {
-						inBuf = new byte[maxSize];
-					}
-					dis.read(inBuf);
-					Haffman.fillFreqTable(inBuf, dbHeader.charsFreqMap);
-				} while (dis.available() > 0);
-				List<Node> listNodeCode = createLiteraCode(dbHeader.charsFreqMap);
-				dis.close();
-
-			} catch (IOException e2) {
-				e2.printStackTrace();
-			}
-			// write freq table in a file
-			try {
-				oos.writeObject(dbHeader);
-			} catch (IOException e3) {
-				e3.printStackTrace();
-			}
-			// code data and write in a file
-			try {
-				dis = new DataInputStream(new FileInputStream(new File(fd.getDirectory() + fd.getFile())));
-				do {
-					if (dis.available() < maxSize) {
-						inBuf = new byte[dis.available()];
-					} else {
-						inBuf = new byte[maxSize];
-					}
-					dis.read(inBuf);
-					taHistory.append("in "+inBuf.length+"\n");
-					outBuf = new Haffman().codeBuffer(inBuf, dbHeader.charsFreqMap);
-					oos.write(outBuf);
-					taHistory.append("out "+outBuf.length+"\n");
-
-				} while (dis.available() > 0);
-				dis.close();
-				oos.flush();
-				oos.close();
-			} catch (IOException e2) {
-				e2.printStackTrace();
-			}
-
-			// read part of file, coding, write part file
-			/*
-			 * try { dis = new DataInputStream(new FileInputStream(new
-			 * File(fd.getDirectory() + fd.getFile()))); while (dis.read(inBuf) != -1) { //
-			 * reading part of file
-			 * 
-			 * // coding part of file
-			 * 
-			 * // Writing part of file
-			 * 
-			 * } dis.close(); oos.flush(); oos.close(); } catch (IOException e2) {
-			 * e2.printStackTrace(); }
-			 */
-
-			taHistory.append(maxSize + "  " + Long.toString(System.currentTimeMillis() - start) + "ms \n");
-
-			/*
-			 * DataBuf outObject = new Haffman().code(inBuf, fileExt); boolean result =
-			 * writeObjectToFile(fd.getDirectory() + fileName + ".myz", outObject);
-			 * 
-			 * if (result == true) { taHistory.append("Создан архив " + fd.getDirectory() +
-			 * fileName + ".myz" + "\n"); taHistory.append("Время " +
-			 * (System.currentTimeMillis() - start) + "ms \n"); } else {
-			 * taHistory.append("Ошибка при записи файла \n"); }
-			 */
-
-			/*
-			 * byte[] inBuf=null;; try { inBuf = readFullFileToBuf(fd.getDirectory() +
-			 * fd.getFile()); } catch (IOException e1) {
-			 * taHistory.append("ошибка чтения файла " + fd.getFile()+ "\n");
-			 * e1.printStackTrace(); } DataBuf outObject = new Haffman().code(inBuf,
-			 * fileExt); boolean result = writeObjectToFile(fd.getDirectory() + fileName +
-			 * ".myz", outObject);
-			 * 
-			 * if (result == true) { taHistory.append("Создан архив " + fd.getDirectory() +
-			 * fileName + ".myz" + "\n"); taHistory.append("Время " +
-			 * (System.currentTimeMillis() - start) + "ms \n"); } else {
-			 * taHistory.append("Ошибка при записи файла \n"); }
-			 */
-
+			Haffman fileArchive = new Haffman(fd);
+			fileArchive.toArchive(taHistory);
 		});
 
 		bExtract.addActionListener(e -> {
@@ -228,32 +124,14 @@ class MainFrame extends JFrame {
 			if (fd.getFile() == null) {
 				return;
 			}
-
-			taHistory.append("Выбран файл для извлечения: " + fd.getDirectory() + fd.getFile() + "\n");
-			String fileName = fd.getFile().replaceFirst("[.][^.]+$", "");
-			long start = System.currentTimeMillis();
-			boolean result = false;
-			DataBuf inObject = null;
-
+			Haffman fileExtract = new Haffman(fd);
 			try {
-				inObject = readObjectFromFile(fd.getDirectory() + fd.getFile());
+				fileExtract.toExtract(taHistory);
 			} catch (ClassNotFoundException | IOException e1) {
-				taHistory.append("Файл " + fd.getFile() + " поврежден или имеет неизвестный формат \n");
+				// TODO Auto-generated catch block
 				e1.printStackTrace();
-				return;
 			}
-
-			byte[] outBuf = new Haffman().deCode(inObject);
-			result = writeToFileFromBuf(fd.getDirectory() + fileName + "." + inObject.getExt(), outBuf);
-			if (result == true) {
-				taHistory.append("Извлечен файл " + fd.getDirectory() + fileName + "." + inObject.getExt() + "\n");
-				taHistory.append("Время " + (System.currentTimeMillis() - start) + "ms \n");
-			} else {
-				taHistory.append("Файл поврежден или имеет неизвестный формат" + "\n");
-			}
-
 		});
-
 	}
 
 }
