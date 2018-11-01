@@ -125,12 +125,7 @@ class MainFrame extends JFrame {
 				return;
 			}
 			Haffman fileExtract = new Haffman(fd);
-			try {
-				fileExtract.toExtract(taHistory);
-			} catch (ClassNotFoundException | IOException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
+			fileExtract.toExtract(taHistory);
 		});
 	}
 

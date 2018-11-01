@@ -7,7 +7,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -18,160 +17,7 @@ import javax.swing.JTextArea;
 import myzip.Haffman.Node;
 
 public class Haffman {
-	// -------------------------------------------------------------------------------------------
-
-	private String fileDir;
-	private String fileName;
-	private String fileExt;
-	private String fileFullPath;
-
-	public Haffman(FileDialog fd) {
-		this.fileDir = fd.getDirectory();
-		this.fileName = fd.getFile().replaceFirst("[.][^.]+$", "");
-		this.fileExt = fd.getFile().substring(fileName.length() + 1);
-		this.fileFullPath = fileDir + fileName + "." + fileExt;
-	}
-
-	private void fillFreqTable(byte[] inBuf, HashMap<Byte, Integer> charsMap) {
-		for (Byte b : inBuf) {
-			charsMap.putIfAbsent(b, 0);
-			charsMap.put(b, charsMap.get(b) + 1);
-		}
-	}
-
-	// -------------------------------------------------------------------------------------------
-	public DataBuf codeFile(byte[] inBuf, String ext) {
-		// Count the frequency of letters Map <letter, weight>
-		HashMap<Byte, Integer> charsMap = new HashMap<Byte, Integer>();
-		fillFreqTable(inBuf, charsMap);
-		List<Node> listNodeCode = createLiteraCode(charsMap);
-		Collections.sort(listNodeCode);
-		// System.out.println(listNodeCode.toString());// for debugging
-		int bufSizeNoZip = inBuf.length;
-		int bufSizeZip = 0;
-		for (Node tmpNode : listNodeCode) {
-			bufSizeZip = bufSizeZip + tmpNode.getWeight() * tmpNode.getCodeLengthBit();
-		}
-
-		if ((bufSizeZip % 8) != 0) {
-			bufSizeZip = bufSizeZip / 8 + 1;// encoded text size
-		} else {
-			bufSizeZip = bufSizeZip / 8; // encoded text size
-		}
-
-		DataBuf myDataBuf = new DataBuf(bufSizeZip, bufSizeNoZip, ext);
-		// To quickly find the codes, copy the ListNodecode to Map
-		// ListNodecode does not use later
-		// fill the light version of the Map in the object myDataBuf. It will save in a
-		// compressed file
-		HashMap<Byte, Node> codeMap = new HashMap<Byte, Node>();
-
-		listNodeCode.forEach(tmp -> codeMap.put(tmp.getValue(), tmp));
-		listNodeCode.forEach(tmp -> myDataBuf.putcodeMapLight(tmp.getValue(), tmp.getWeight()));
-
-		int codeMapLightSize = myDataBuf.getcodeMapLight().size() * (Byte.BYTES + Integer.BYTES);
-		/*
-		 * System.out.println("encoded file size " + (1372 + //wrong header size value.
-		 * !!!!!! ext.length() + Integer.BYTES + Integer.BYTES + bufSizeZip +
-		 * codeMapLightSize) + " bytes");
-		 */ // You may not use it
-
-		int[] bitMask = new int[Integer.SIZE];
-		for (int i = 0; i < Integer.SIZE; i++) {
-			bitMask[i] = 1 << (i);
-		}
-		int i8 = 0, i32, outBufIndex = 0;
-		for (byte inBufIndex : inBuf) {
-			Node codeNode = codeMap.get(inBufIndex);
-			int codeInt = codeNode.getCodeInt();
-			int codeLength = codeNode.getCodeLengthBit();
-			for (i32 = codeLength - 1; i32 >= 0; i32--) {
-				if ((bitMask[i32] & codeInt) != 0) {
-					myDataBuf.byteBuf[outBufIndex] = (byte) (myDataBuf.byteBuf[outBufIndex] | 1);
-				}
-				i8++;
-				if (i8 == 8) {
-					i8 = 0;
-					outBufIndex++;
-					if (outBufIndex == bufSizeZip) {
-						return myDataBuf;
-					}
-				}
-				myDataBuf.byteBuf[outBufIndex] = (byte) (myDataBuf.byteBuf[outBufIndex] << 1);
-			}
-		}
-		myDataBuf.byteBuf[outBufIndex] = (byte) (myDataBuf.byteBuf[outBufIndex] << (7 - i8));
-		return myDataBuf;
-	}
-
-	// -------------------------------------------------------------------------------------------
-	public byte[] deCodeFile(DataBuf inObject) {
-		if (inObject == null) {
-			return null;
-		}
-		byte[] outBuf = new byte[inObject.getBufSizeNoZip()];
-		List<Node> listNodeCode = createLiteraCode(inObject.getcodeMapLight());
-		// copy ListNodeCode in Map for fast searching by codStr
-		// ListNodeCode does not use later
-		HashMap<String, Node> codeMap = new HashMap<String, Node>();
-		for (Node tmpNode : listNodeCode) {
-			codeMap.putIfAbsent(tmpNode.getCodeStr(), tmpNode);
-		}
-
-		int i8 = 0, outBufIndex = 0, codeSize = 1;
-		String codedStr = "";
-		for (byte byteInBuf : inObject.byteBuf) {
-
-			for (i8 = 0; i8 < 8; i8++) {
-				if (outBufIndex == outBuf.length) {
-					return outBuf;
-				}
-
-				if ((byteInBuf & 0b10000000) == 0) {
-					codedStr = codedStr + "0";
-				} else {
-					codedStr = codedStr + "1";
-				}
-
-				if (codeMap.containsKey(codedStr)) {
-					outBuf[outBufIndex] = codeMap.get(codedStr).getValue();
-					outBufIndex++;
-					codedStr = "";
-				}
-				byteInBuf = (byte) (byteInBuf << 1);
-			}
-		}
-		return outBuf;
-	}
-
-	// -------------------------------------------------------------------------------------------
-	private List<Node> createLiteraCode(HashMap<Byte, Integer> charsFreqMap) {
-		// ListNode - to form a binary tree with temporary nodes
-		List<Node> listNode = new ArrayList<Node>();
-		charsFreqMap.forEach((byteValue, intWeight) -> {
-			listNode.add(new Node(byteValue, intWeight));
-		});
-		// copy all references to the leaves of the tree in ListNodecode
-		// there will be remember the codes of letters
-		List<Node> listNodeCode = new ArrayList<Node>();
-		listNodeCode.addAll(listNode);
-
-		// Formation of codes of letters. There will be 1 node In listNode
-		// listNode is not used in the future
-		while (listNode.size() > 1) {
-			Collections.sort(listNode);
-			Node tmpNode = new Node(listNode.get(0), listNode.get(1));
-			tmpNode.node0.createCode(tmpNode.node0, "0");
-			tmpNode.node1.createCode(tmpNode.node1, "1");
-			listNode.add(tmpNode);
-			listNode.remove(1);
-			listNode.remove(0);
-		}
-		Collections.sort(listNodeCode);
-		return listNodeCode;
-	}
-
-	// -------------------------------------------------------------------------------------------
+	
 	// class to implement a binary tree
 	class Node implements Comparable<Node> {
 		private int codeInt = 0; // the value of the code as a number
@@ -221,16 +67,16 @@ public class Haffman {
 
 		}
 
-		public String getCodeStr() {
-			return codeStr;
-		}
-
 		public int getCodeInt() {
 			return codeInt;
 		}
 
 		public int getCodeLengthBit() {
 			return codeLengthBit;
+		}
+
+		public String getCodeStr() {
+			return codeStr;
 		}
 
 		public byte getValue() {
@@ -248,14 +94,24 @@ public class Haffman {
 
 	}
 
-	// -------------------------------------------------------------------------------------------
-	private byte[] codeBuffer(byte[] inBuf, List<Node> listNodeCode) {
+	private String fileDir;
+	private String fileExt;
+	private String fileFullPath;
 
-		int bufSizeNoZip = inBuf.length;
+	private String fileName;
+
+	public Haffman(FileDialog fd) {
+		this.fileDir = fd.getDirectory();
+		this.fileName = fd.getFile().replaceFirst("[.][^.]+$", "");
+		this.fileExt = fd.getFile().substring(fileName.length() + 1);
+		this.fileFullPath = fileDir + fileName + "." + fileExt;
+	}
+
+	// -------------------------------------------------------------------------------------------
+private byte[] codeBuffer(byte[] inBuf, List<Node> listNodeCode) {
+
 		int bufSizeZip = 0;
 		byte[] outBuf = null;
-
-		System.out.println(listNodeCode.toString());// for debug
 
 		// To quickly find the codes, copy the ListNodecode to Map
 		// ListNodecode does not use later
@@ -271,7 +127,6 @@ public class Haffman {
 		} else {
 			bufSizeZip = bufSizeZip / 8; // encoded data size
 		}
-
 		outBuf = new byte[bufSizeZip];
 
 		int[] bitMask = new int[Integer.SIZE];
@@ -304,6 +159,135 @@ public class Haffman {
 	}
 
 	// -------------------------------------------------------------------------------------------
+public DataBuf codeFile(byte[] inBuf, String ext) {
+		// Count the frequency of letters Map <letter, weight>
+		HashMap<Byte, Integer> charsMap = new HashMap<Byte, Integer>();
+		fillFreqTable(inBuf, charsMap);
+		List<Node> listNodeCode = createLiteraCode(charsMap);
+		Collections.sort(listNodeCode);
+		// System.out.println(listNodeCode.toString());// for debugging
+		int bufSizeNoZip = inBuf.length;
+		int bufSizeZip = 0;
+		for (Node tmpNode : listNodeCode) {
+			bufSizeZip = bufSizeZip + tmpNode.getWeight() * tmpNode.getCodeLengthBit();
+		}
+
+		if ((bufSizeZip % 8) != 0) {
+			bufSizeZip = bufSizeZip / 8 + 1;// encoded text size
+		} else {
+			bufSizeZip = bufSizeZip / 8; // encoded text size
+		}
+
+		DataBuf myDataBuf = new DataBuf(bufSizeZip, bufSizeNoZip, ext);
+		// To quickly find the codes, copy the ListNodecode to Map
+		// ListNodecode does not use later
+		// fill the light version of the Map in the object myDataBuf. It will save in a
+		// compressed file
+		HashMap<Byte, Node> codeMap = new HashMap<Byte, Node>();
+
+		listNodeCode.forEach(tmp -> codeMap.put(tmp.getValue(), tmp));
+		listNodeCode.forEach(tmp -> myDataBuf.putcodeMapLight(tmp.getValue(), tmp.getWeight()));
+
+		int[] bitMask = new int[Integer.SIZE];
+		for (int i = 0; i < Integer.SIZE; i++) {
+			bitMask[i] = 1 << (i);
+		}
+		int i8 = 0, i32 = 0, outBufIndex = 0;
+		for (byte inBufIndex : inBuf) {
+			Node codeNode = codeMap.get(inBufIndex);
+			int codeInt = codeNode.getCodeInt();
+			int codeLength = codeNode.getCodeLengthBit();
+			for (i32 = codeLength - 1; i32 >= 0; i32--) {
+				if ((bitMask[i32] & codeInt) != 0) {
+					myDataBuf.byteBuf[outBufIndex] = (byte) (myDataBuf.byteBuf[outBufIndex] | 1);
+				}
+				i8++;
+				if (i8 == 8) {
+					i8 = 0;
+					outBufIndex++;
+					if (outBufIndex == bufSizeZip) {
+						return myDataBuf;
+					}
+				}
+				myDataBuf.byteBuf[outBufIndex] = (byte) (myDataBuf.byteBuf[outBufIndex] << 1);
+			}
+		}
+		myDataBuf.byteBuf[outBufIndex] = (byte) (myDataBuf.byteBuf[outBufIndex] << (7 - i8));
+		return myDataBuf;
+	}
+
+	private List<Node> createLiteraCode(HashMap<Byte, Integer> charsFreqMap) {
+		// ListNode - to form a binary tree with temporary nodes
+		List<Node> listNode = new ArrayList<Node>();
+		charsFreqMap.forEach((byteValue, intWeight) -> {
+			listNode.add(new Node(byteValue, intWeight));
+		});
+		// copy all references to the leaves of the tree in ListNodecode
+		// there will be remember the codes of letters
+		List<Node> listNodeCode = new ArrayList<Node>();
+		listNodeCode.addAll(listNode);
+
+		// Formation of codes of letters. There will be 1 node In listNode
+		// listNode is not used in the future
+		while (listNode.size() > 1) {
+			Collections.sort(listNode);
+			Node tmpNode = new Node(listNode.get(0), listNode.get(1));
+			tmpNode.node0.createCode(tmpNode.node0, "0");
+			tmpNode.node1.createCode(tmpNode.node1, "1");
+			listNode.add(tmpNode);
+			listNode.remove(1);
+			listNode.remove(0);
+		}
+		Collections.sort(listNodeCode);
+		return listNodeCode;
+	}
+
+	public byte[] deCodeFile(DataBuf inObject) {
+		if (inObject == null) {
+			return null;
+		}
+		byte[] outBuf = new byte[inObject.getBufSizeNoZip()];
+		List<Node> listNodeCode = createLiteraCode(inObject.getcodeMapLight());
+		// copy ListNodeCode in Map for fast searching by codStr
+		// ListNodeCode does not use later
+		HashMap<String, Node> codeMap = new HashMap<String, Node>();
+		for (Node tmpNode : listNodeCode) {
+			codeMap.putIfAbsent(tmpNode.getCodeStr(), tmpNode);
+		}
+
+		int i8 = 0, outBufIndex = 0, codeSize = 1;
+		String codedStr = "";
+		for (byte byteInBuf : inObject.byteBuf) {
+
+			for (i8 = 0; i8 < 8; i8++) {
+				if (outBufIndex == outBuf.length) {
+					return outBuf;
+				}
+
+				if ((byteInBuf & 0b10000000) == 0) {
+					codedStr = codedStr + "0";
+				} else {
+					codedStr = codedStr + "1";
+				}
+
+				if (codeMap.containsKey(codedStr)) {
+					outBuf[outBufIndex] = codeMap.get(codedStr).getValue();
+					outBufIndex++;
+					codedStr = "";
+				}
+				byteInBuf = (byte) (byteInBuf << 1);
+			}
+		}
+		return outBuf;
+	}
+
+	private void fillFreqTable(byte[] inBuf, HashMap<Byte, Integer> charsMap) {
+		for (Byte b : inBuf) {
+			charsMap.putIfAbsent(b, 0);
+			charsMap.put(b, charsMap.get(b) + 1);
+		}
+	}
+
 	public void toArchive(JTextArea taHistory) {
 
 		int maxSize = 10000000; // inBuf size
@@ -352,53 +336,9 @@ public class Haffman {
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
-
-		/*
-		 * do { if (dis.available() < maxSize) { inBuf = new byte[dis.available()]; }
-		 * else { inBuf = new byte[maxSize]; } dis.read(inBuf);
-		 */
-
-		// read part of file, coding, write part file
-		/*
-		 * try { dis = new DataInputStream(new FileInputStream(new
-		 * File(fd.getDirectory() + fd.getFile()))); while (dis.read(inBuf) != -1) { //
-		 * reading part of file
-		 * 
-		 * // coding part of file
-		 * 
-		 * // Writing part of file
-		 * 
-		 * } dis.close(); oos.flush(); oos.close(); } catch (IOException e2) {
-		 * e2.printStackTrace(); }
-		 */
-
-		/*
-		 * DataBuf outObject = new Haffman().code(inBuf, fileExt); boolean result =
-		 * writeObjectToFile(fd.getDirectory() + fileName + ".myz", outObject);
-		 * 
-		 * if (result == true) { taHistory.append("Создан архив " + fd.getDirectory() +
-		 * fileName + ".myz" + "\n"); taHistory.append("Время " +
-		 * (System.currentTimeMillis() - start) + "ms \n"); } else {
-		 * taHistory.append("Ошибка при записи файла \n"); }
-		 */
-
-		/*
-		 * byte[] inBuf=null;; try { inBuf = readFullFileToBuf(fd.getDirectory() +
-		 * fd.getFile()); } catch (IOException e1) {
-		 * taHistory.append("ошибка чтения файла " + fd.getFile()+ "\n");
-		 * e1.printStackTrace(); } DataBuf outObject = new Haffman().code(inBuf,
-		 * fileExt); boolean result = writeObjectToFile(fd.getDirectory() + fileName +
-		 * ".myz", outObject);
-		 * 
-		 * if (result == true) { taHistory.append("Создан архив " + fd.getDirectory() +
-		 * fileName + ".myz" + "\n"); taHistory.append("Время " +
-		 * (System.currentTimeMillis() - start) + "ms \n"); } else {
-		 * taHistory.append("Ошибка при записи файла \n"); }
-		 */
-
 	}
 
-	public void toExtract(JTextArea taHistory) throws ClassNotFoundException, IOException {
+	public void toExtract(JTextArea taHistory)  {
 		taHistory.append("Выбран файл для извлечения: " + fileFullPath + "\n");
 		// long start = System.currentTimeMillis();
 		boolean result = false;
