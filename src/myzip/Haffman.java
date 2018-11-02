@@ -116,7 +116,7 @@ public class Haffman implements Serializable {
 	private String fileExt;
 	private String fileFullPath;
 	private String fileName;
-	private final int MAX_BUF_SIZE = 1000000;
+	private final int MAX_BUF_SIZE = 10000000;
 
 	public Haffman(FileDialog fd) {
 		this.fileDir = fd.getDirectory();
@@ -171,7 +171,7 @@ public class Haffman implements Serializable {
 		return outBuf;
 	}
 
-	public List<Node> createlistNodeCode(HashMap<Byte, Integer> charsMap) {
+	private List<Node> createlistNodeCode(HashMap<Byte, Integer> charsMap) {
 		// ListNode - to form a binary tree with temporary nodes
 		List<Node> listNode = new ArrayList<Node>();
 		charsMap.forEach((byteValue, intWeight) -> {
@@ -305,7 +305,7 @@ public class Haffman implements Serializable {
 
 			// decode data and write in a file
 			DataOutputStream streamOutFile = new DataOutputStream(
-					new FileOutputStream(new File(this.fileDir + this.fileName + "1" + this.fileExt)));
+					new FileOutputStream(new File(this.fileDir + this.fileName + "1" + "."+this.fileExt)));
 
 			ObjBuf inObjBuf = new ObjBuf();
 			byte[] outBuf = null;
