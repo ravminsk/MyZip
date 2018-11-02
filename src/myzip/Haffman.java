@@ -17,22 +17,9 @@ import java.util.List;
 
 import javax.swing.JTextArea;
 
-import myzip.Haffman.Node;
+public class Haffman implements Serializable {
 
-public class Haffman implements Serializable{
-
-	class ObjBuf implements Serializable{
-		private int sizeNoZip = 0;
-		byte[] buf = null;
-
-		public int getSizeNoZip() {
-			return sizeNoZip;
-		}
-
-		public void setSizeNoZip(int sizeNoZip) {
-			this.sizeNoZip = sizeNoZip;
-		}
-	}
+	private static final long serialVersionUID = 1L;
 
 	// class to implement a binary tree
 	class Node implements Comparable<Node> {
@@ -110,6 +97,21 @@ public class Haffman implements Serializable{
 
 	}
 
+	class ObjBuf implements Serializable {
+
+		private static final long serialVersionUID = 1L;
+		byte[] buf = null;
+		private int sizeNoZip = 0;
+
+		public int getSizeNoZip() {
+			return sizeNoZip;
+		}
+
+		public void setSizeNoZip(int sizeNoZip) {
+			this.sizeNoZip = sizeNoZip;
+		}
+	}
+
 	private String fileDir;
 	private String fileExt;
 	private String fileFullPath;
@@ -169,10 +171,10 @@ public class Haffman implements Serializable{
 		return outBuf;
 	}
 
-	private HashMap<Byte, Node> createCodeMap(HashMap<Byte, Integer> charsFreqMap) {
+	public List<Node> createlistNodeCode(HashMap<Byte, Integer> charsMap) {
 		// ListNode - to form a binary tree with temporary nodes
 		List<Node> listNode = new ArrayList<Node>();
-		charsFreqMap.forEach((byteValue, intWeight) -> {
+		charsMap.forEach((byteValue, intWeight) -> {
 			listNode.add(new Node(byteValue, intWeight));
 		});
 		// copy all references to the leaves of the tree in ListNodecode
@@ -191,12 +193,34 @@ public class Haffman implements Serializable{
 			listNode.remove(1);
 			listNode.remove(0);
 		}
-		// To quickly find the codes, copy the ListNodecode to Map
-		// ListNodecode does not use later
-		HashMap<Byte, Node> codeMap = new HashMap<Byte, Node>();
-		listNodeCode.forEach(tmp -> codeMap.put(tmp.getValue(), tmp));
+		return listNodeCode;
+	}
 
-		return codeMap;
+	private byte[] deCodeBuffer(int sizeNoZip, byte[] inBuf, HashMap<String, Node> codeMap) {
+
+		byte[] outBuf = new byte[sizeNoZip];
+		int i8 = 0, outBufIndex = 0;
+		String codedStr = "";
+		for (byte byteInBuf : inBuf) {
+			for (i8 = 0; i8 < 8; i8++) {
+				if (outBufIndex == outBuf.length) {
+					return outBuf;
+				}
+				if ((byteInBuf & 0b10000000) == 0) {
+					codedStr = codedStr + "0";
+				} else {
+					codedStr = codedStr + "1";
+				}
+
+				if (codeMap.containsKey(codedStr)) {
+					outBuf[outBufIndex] = codeMap.get(codedStr).getValue();
+					outBufIndex++;
+					codedStr = "";
+				}
+				byteInBuf = (byte) (byteInBuf << 1);
+			}
+		}
+		return outBuf;
 	}
 
 	private void fillFreqTable(byte[] inBuf, HashMap<Byte, Integer> charsMap) {
@@ -222,13 +246,18 @@ public class Haffman implements Serializable{
 			streamForCountData.close();
 
 			// write frequency table and fileExt in a file
-			ObjectOutputStream streamOutFile = 	new ObjectOutputStream(
-												new FileOutputStream(new File(this.fileDir + this.fileName + ".myz")));
+			ObjectOutputStream streamOutFile = new ObjectOutputStream(
+					new FileOutputStream(new File(this.fileDir + this.fileName + ".myz")));
 			streamOutFile.writeObject(this.fileExt);
 			streamOutFile.writeObject(charsFreqMap);
 
 			// create code table from frequency table)
-			HashMap<Byte, Node> codeMap = createCodeMap(charsFreqMap);
+			List<Node> listNodeCode = createlistNodeCode(charsFreqMap);
+
+			// To quickly find the codes, copy the ListNodecode to Map
+			// ListNodecode does not use later
+			HashMap<Byte, Node> codeMap = new HashMap<Byte, Node>();
+			listNodeCode.forEach(tmp -> codeMap.put(tmp.getValue(), tmp));
 
 			// code data and write in a file
 			DataInputStream streamInData = new DataInputStream(new FileInputStream(new File(this.fileFullPath)));
@@ -264,23 +293,29 @@ public class Haffman implements Serializable{
 			@SuppressWarnings("unchecked")
 			HashMap<Byte, Integer> charsFreqMap = (HashMap<Byte, Integer>) streamInFile.readObject();
 
-			// create code table from frequency table)
-			HashMap<Byte, Node> codeMap = createCodeMap(charsFreqMap);
+			// create code List from frequency table)
+			List<Node> listNodeCode = createlistNodeCode(charsFreqMap);
+
+			// copy ListNodeCode in Map for fast searching by codStr
+			// ListNodeCode does not use later
+			HashMap<String, Node> codeMap = new HashMap<String, Node>();
+			for (Node tmpNode : listNodeCode) {
+				codeMap.putIfAbsent(tmpNode.getCodeStr(), tmpNode);
+			}
 
 			// decode data and write in a file
-			DataOutputStream streamOutFile = new DataOutputStream(new FileOutputStream
-																 (new File(	this.fileDir + 
-																			this.fileName + "1"+	
-																			this.fileExt)));
-			ObjBuf inObjBuf= new ObjBuf();
+			DataOutputStream streamOutFile = new DataOutputStream(
+					new FileOutputStream(new File(this.fileDir + this.fileName + "1" + this.fileExt)));
+
+			ObjBuf inObjBuf = new ObjBuf();
 			byte[] outBuf = null;
 			do {
 				inObjBuf = (ObjBuf) streamInFile.readObject();
 				if (inObjBuf.buf != null) {
-					outBuf = deCodeBuffer(inObjBuf.sizeNoZip, inObjBuf.buf,codeMap);
+					outBuf = deCodeBuffer(inObjBuf.sizeNoZip, inObjBuf.buf, codeMap);
 					streamOutFile.write(outBuf);
 				}
-			} while (inObjBuf.sizeNoZip==MAX_BUF_SIZE);
+			} while (inObjBuf.sizeNoZip == MAX_BUF_SIZE);
 
 			streamOutFile.flush();
 			streamOutFile.close();
@@ -291,33 +326,5 @@ public class Haffman implements Serializable{
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		}
-	}
-
-	
-	private byte[] deCodeBuffer(int sizeNoZip, byte[] inBuf, HashMap<Byte, Node> codeMap) {
-
-		byte[] outBuf = new byte[sizeNoZip];
-		int i8 = 0, outBufIndex = 0;
-		String codedStr = "";
-		for (byte byteInBuf : inBuf) {
-			for (i8 = 0; i8 < 8; i8++) {
-				if (outBufIndex == outBuf.length) {
-					return outBuf;
-				}
-				if ((byteInBuf & 0b10000000) == 0) {
-					codedStr = codedStr + "0";
-				} else {
-					codedStr = codedStr + "1";
-				}
-			
-				if (codeMap.containsKey(codedStr)) {
-					outBuf[outBufIndex] = codeMap.get(codedStr).getValue();
-					outBufIndex++;
-					codedStr = "";
-				}
-				byteInBuf = (byte) (byteInBuf << 1);
-			}
-		}
-		return outBuf;
 	}
 }
