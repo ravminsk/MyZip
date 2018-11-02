@@ -44,24 +44,12 @@ public class DataBuf implements Serializable {
 }
 
 class DataBufHeader implements Serializable {
-	
-	private int bufSizeZip;// compressed data size
-	private int bufSizeNoZip;// size of uncompressed data
+
 	private String ext;// extension of the source file
 	public HashMap<Byte, Integer> charsFreqMap = new HashMap<Byte, Integer>(); // contains value-weight
 
-	public DataBufHeader(int bufSizeZip, int bufSizeNoZip, String ext) {
-		this.bufSizeZip = bufSizeZip;
-		this.bufSizeNoZip = bufSizeNoZip;
+	public DataBufHeader(String ext) {
 		this.ext = ext;
-	}
-
-	public int getBufSizeNoZip() {
-		return bufSizeNoZip;
-	}
-
-	public int getBufSizeZip() {
-		return bufSizeZip;
 	}
 
 	public String getExt() {
@@ -75,5 +63,5 @@ class DataBufHeader implements Serializable {
 	public void putCharsFreqMap(byte Value, int Weight) {
 		charsFreqMap.put(Value, Weight);
 	}
-	
+
 }
