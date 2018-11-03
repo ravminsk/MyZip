@@ -117,6 +117,7 @@ class MainFrame extends JFrame {
 					fileArchive.toArchive(progressBar, taHistory);
 
 					panelForProgressBar.remove(progressBar);
+					panelForProgressBar.repaint();
 					panelForProgressBar.revalidate();
 				}
 			};
