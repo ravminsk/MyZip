@@ -1,5 +1,7 @@
 package myzip;
 
+import java.awt.Component;
+import java.awt.Container;
 import java.awt.FileDialog;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -10,11 +12,21 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
+import java.nio.file.WatchEvent.Kind;
+import java.nio.file.WatchEvent.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
+import javax.swing.JProgressBar;
 import javax.swing.JTextArea;
 
 public class Haffman implements Serializable {
@@ -116,7 +128,7 @@ public class Haffman implements Serializable {
 	private String fileExt;
 	private String fileFullPath;
 	private String fileName;
-	private final int MAX_BUF_SIZE = 10000000;
+	private final int MAX_BUF_SIZE = 16777216;
 
 	public Haffman(FileDialog fd) {
 		this.fileDir = fd.getDirectory();
@@ -230,11 +242,12 @@ public class Haffman implements Serializable {
 		}
 	}
 
-	public void toArchive(JTextArea taHistory) {
+	public void toArchive(JProgressBar progressBar, JTextArea taHistory) {
 
 		try {
 			// fill frequency table
 			DataInputStream streamForCountData = new DataInputStream(new FileInputStream(new File(this.fileFullPath)));
+			taHistory.append("Добавить в архив: " + this.fileFullPath + " ..." + "\n");
 			int size = Math.min(streamForCountData.available(), MAX_BUF_SIZE);
 			HashMap<Byte, Integer> charsFreqMap = new HashMap<Byte, Integer>();
 			while (size > 0) {
@@ -261,29 +274,33 @@ public class Haffman implements Serializable {
 
 			// code data and write in a file
 			DataInputStream streamInData = new DataInputStream(new FileInputStream(new File(this.fileFullPath)));
-
+			
+			progressBar.setMaximum(streamInData.available() / MAX_BUF_SIZE);
+			progressBar.setString("Архивация  "+fileFullPath);
+			
 			size = Math.min(streamInData.available(), MAX_BUF_SIZE);
 			while (size > 0) {
+				progressBar.setValue(progressBar.getValue()+1);
 				byte[] inBuf = new byte[size];
 				streamInData.read(inBuf);
-				taHistory.append("in " + inBuf.length + "   ");// for debug
 				ObjBuf outObjBuf = new ObjBuf();
 				outObjBuf.setSizeNoZip(size);
 				outObjBuf.buf = codeBuffer(inBuf, codeMap);
 				streamOutFile.writeObject(outObjBuf);
-				taHistory.append("out " + outObjBuf.buf.length + "\n");// for debug
 				size = Math.min(streamInData.available(), MAX_BUF_SIZE);
 			}
 			streamInData.close();
 			streamOutFile.flush();
 			streamOutFile.close();
+			taHistory.append("Создан архив " + this.fileDir + this.fileName + ".myz" + "\n");
 		} catch (IOException e1) {
+			taHistory.append("Ошибка при создании архива " + this.fileDir + this.fileName + ".myz" + "\n");
 			e1.printStackTrace();
 		}
 	}
 
-	public void toExtract(JTextArea taHistory) {
-		taHistory.append("Выбран файл для извлечения: " + fileFullPath + "\n");
+	public void toExtract(JProgressBar progressBar, JTextArea taHistory) {
+		taHistory.append("Извлечь файл : " + this.fileFullPath + " ...\n");
 
 		try {
 			ObjectInputStream streamInFile = new ObjectInputStream(new FileInputStream(new File(fileFullPath)));
@@ -305,12 +322,16 @@ public class Haffman implements Serializable {
 
 			// decode data and write in a file
 			DataOutputStream streamOutFile = new DataOutputStream(
-					new FileOutputStream(new File(this.fileDir + this.fileName + "1" + "."+this.fileExt)));
+					new FileOutputStream(new File(this.fileDir + this.fileName + "1" + "." + this.fileExt)));
 
+			int rrr=(int) new File(this.fileFullPath).length();
+			progressBar.setMaximum((int) new File(this.fileFullPath).length());
+			progressBar.setString("Извлечение  "+fileFullPath);
 			ObjBuf inObjBuf = new ObjBuf();
 			byte[] outBuf = null;
 			do {
 				inObjBuf = (ObjBuf) streamInFile.readObject();
+				progressBar.setValue(progressBar.getValue()+inObjBuf.buf.length);
 				if (inObjBuf.buf != null) {
 					outBuf = deCodeBuffer(inObjBuf.sizeNoZip, inObjBuf.buf, codeMap);
 					streamOutFile.write(outBuf);
@@ -320,10 +341,13 @@ public class Haffman implements Serializable {
 			streamOutFile.flush();
 			streamOutFile.close();
 			streamInFile.close();
+			taHistory.append("Извлечен файл " + this.fileDir + this.fileName + "." + this.fileExt + "\n");
 
 		} catch (IOException e) {
+			taHistory.append("Ошибка при извлечении файла " + this.fileDir + this.fileName + "." + this.fileExt + "\n");
 			e.printStackTrace();
 		} catch (ClassNotFoundException e) {
+			taHistory.append("Ошибка при чтении архива \n");
 			e.printStackTrace();
 		}
 	}
